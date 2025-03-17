@@ -2,60 +2,83 @@
 Route optimization project using Graph Neural Networks (GNN) for efficient planning. Optimizes routes across truck, rail, and ocean transport, minimizing cost, time, GHG emissions, and fuel usage.
 
 ```mermaid
-graph TD
-    A[Input Data: Vendors, Plants, End Destinations, Transport Modes, Costs, Emissions] --> B[Graph Construction: Nodes & Edges]
-
-    subgraph Vendors
-        V1[Vendor 1]
-        V2[Vendor 2]
-        V3[Vendor 3]
+flowchart TD
+    subgraph "Data Inputs"
+        A[Supply Chain Network Data] --> A1[Vendors]
+        A[Supply Chain Network Data] --> A2[Production Plants]
+        A[Supply Chain Network Data] --> A3[Distribution Centers]
+        A[Supply Chain Network Data] --> A4[End Customers]
+        
+        B[Transportation Data] --> B1[Truck Routes]
+        B[Transportation Data] --> B2[Rail Networks]
+        B[Transportation Data] --> B3[Ocean Shipping Lanes]
+        
+        C[Constraint Parameters] --> C1[Capacity Limits]
+        C[Constraint Parameters] --> C2[Time Windows]
+        C[Constraint Parameters] --> C3[GHG Emission Targets]
+        C[Constraint Parameters] --> C4[Budget Constraints]
+    end
+    
+    subgraph "Graph Construction"
+        D[Build Multi-Modal Graph]
+        D1[Nodes: Vendors, Plants, DCs, Customers]
+        D2[Edges: Transportation Links]
+        D3[Edge Attributes: Cost, Time, GHG, Mode]
+        
+        D --> D1
+        D --> D2
+        D --> D3
+    end
+    
+    subgraph "GNN Framework"
+        E[Graph Neural Network]
+        E1[Node Embedding Layer]
+        E2[Message Passing Layer]
+        E3[Graph Attention Layer]
+        E4[Path Scoring Layer]
+        
+        E --> E1
+        E1 --> E2
+        E2 --> E3
+        E3 --> E4
+    end
+    
+    subgraph "Multi-Objective Optimization"
+        F[Pareto Optimization]
+        F1[Cost Minimization]
+        F2[GHG Emission Reduction]
+        F3[Service Level Maximization]
+        
+        F --> F1
+        F --> F2
+        F --> F3
+    end
+    
+    subgraph "Route Recommendation Engine"
+        G[Optimal Route Selection]
+        G1[Mode Selection: Truck/Rail/Ocean]
+        G2[Vendor-Plant Assignments]
+        G3[Plant-DC-Customer Flows]
+        
+        G --> G1
+        G --> G2
+        G --> G3
     end
 
-    subgraph Plants
-        P1[Plant 1]
-        P2[Plant 2]
-        P3[Plant 3]
-    end
-
-    subgraph Destinations
-        D1[Destination 1]
-        D2[Destination 2]
-        D3[Destination 3]
-    end
-
-    B --> V1
-    B --> V2
-    B --> V3
-    B --> P1
-    B --> P2
-    B --> P3
-    B --> D1
-    B --> D2
-    B --> D3
-
-    V1 --> C[GNN Model: Learn cost, time, GHG patterns]
-    V2 --> C
-    V3 --> C
-    P1 --> C
-    P2 --> C
-    P3 --> C
-    D1 --> C
-    D2 --> C
-    D3 --> C
-
-    C --> D[A* Algorithm: Find shortest & optimal paths]
-    D --> E[Multi-Modal Optimization: Truck, Rail, Ocean]
-    E --> F[Output: Optimized Routes, Cost & GHG Reduction]
-
-    subgraph Frameworks
-        G[PyTorch Geometric (GNN)]
-        H[NetworkX (Graph & A*)]
-        I[Custom Cost/GHG Functions]
-    end
-
-    G --> C
-    H --> D
-    I --> E
+    A --> D
+    B --> D
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    
+    style A fill:#d4f1f9,stroke:#05a8e6
+    style B fill:#d4f1f9,stroke:#05a8e6
+    style C fill:#d4f1f9,stroke:#05a8e6
+    style D fill:#ffe6cc,stroke:#ff9900
+    style E fill:#e1d5e7,stroke:#9673a6
+    style F fill:#d5e8d4,stroke:#6c8ebf
+    style G fill:#f8cecc,stroke:#b85450
 ```
 
 
