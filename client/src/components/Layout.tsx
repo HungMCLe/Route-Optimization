@@ -8,8 +8,11 @@ import {
   TrendingUp,
   AlertTriangle,
   Menu,
-  X
+  X,
+  GitCompare
 } from 'lucide-react';
+import { NotificationCenter } from './NotificationCenter';
+import { useWebSocket } from '../hooks/useWebSocket';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -18,12 +21,13 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeView, setActiveView] = useState('dashboard');
+  const { isConnected, alerts, dismissAlert, clearAlerts } = useWebSocket();
 
   const menuItems = [
     { id: 'dashboard', icon: BarChart3, label: 'Dashboard' },
     { id: 'routes', icon: RouteIcon, label: 'Route Planning' },
     { id: 'map', icon: Map, label: 'Network Map' },
-    { id: 'scenarios', icon: TrendingUp, label: 'Scenarios' },
+    { id: 'scenarios', icon: GitCompare, label: 'Scenario Comparison' },
     { id: 'network', icon: Network, label: 'Graph Editor' },
     { id: 'analytics', icon: BarChart3, label: 'Analytics' },
     { id: 'incidents', icon: AlertTriangle, label: 'Incidents' },
@@ -137,9 +141,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                     Network Status
                   </p>
                   <div className="flex items-center space-x-2 mt-1">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                    <div className={`w-2 h-2 rounded-full animate-pulse ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
                     <span className="text-sm font-semibold text-slate-900 dark:text-white">
-                      Online
+                      {isConnected ? 'Online' : 'Offline'}
                     </span>
                   </div>
                 </div>
@@ -151,6 +155,11 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                     247
                   </p>
                 </div>
+                <NotificationCenter
+                  alerts={alerts}
+                  onDismiss={dismissAlert}
+                  onClearAll={clearAlerts}
+                />
               </div>
             </div>
           </div>
