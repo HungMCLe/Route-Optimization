@@ -1,4 +1,69 @@
-# Route-Optimization-For-Logistics
+# Route Optimization Platform
+
+A production-ready, full-stack route optimization platform for multi-modal logistics networks. Built with React, TypeScript, Node.js, and advanced graph algorithms.
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 20+ and npm
+
+### Installation & Running
+
+```bash
+# Install all dependencies (root, server, and client)
+npm run install:all
+
+# Run both backend and frontend concurrently
+npm run dev
+```
+
+The application will be available at:
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:3001
+- **Health Check**: http://localhost:3001/health
+
+### Manual Setup
+
+If you prefer to run servers separately:
+
+```bash
+# Terminal 1: Start backend
+cd server
+npm install
+npm run dev
+
+# Terminal 2: Start frontend
+cd client
+npm install
+npm run dev
+```
+
+## 📋 Features
+
+✅ **Multi-Modal Routing** - Road, Rail, Sea, Air, and Intermodal transport
+✅ **Advanced Algorithms** - A*, Dijkstra, Bidirectional Search, Hybrid approaches
+✅ **Multi-Objective Optimization** - Cost, Time, Carbon, Reliability, Service Level
+✅ **Pareto Frontier Generation** - Find optimal trade-offs between objectives
+✅ **Real-Time Re-optimization** - Dynamic rerouting on disruptions
+✅ **Beautiful Dashboard** - Production-ready UI with analytics
+✅ **Interactive Network Visualization** - Canvas-based graph editor
+✅ **Constraint Solving** - Time windows, capacity, emissions, regulatory
+✅ **Cost Breakdown** - Detailed attribution (linehaul, fuel, tolls, customs)
+✅ **Scenario Analysis** - What-if planning and comparison
+
+## 📖 Documentation
+
+See [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md) for comprehensive documentation including:
+- Architecture details
+- API documentation
+- Usage examples
+- Performance characteristics
+- Deployment guide
+
+---
+
+## Original System Architecture
+
 Route optimization project using Graph Neural Networks (GNN) for efficient planning. Optimizes routes across truck, rail, and ocean transport, minimizing cost, time, GHG emissions, and fuel usage.
 
 ```mermaid
