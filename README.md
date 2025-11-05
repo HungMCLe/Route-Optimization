@@ -40,16 +40,40 @@ npm run dev
 
 ## 📋 Features
 
+### Core Routing & Optimization
 ✅ **Multi-Modal Routing** - Road, Rail, Sea, Air, and Intermodal transport
 ✅ **Advanced Algorithms** - A*, Dijkstra, Bidirectional Search, Hybrid approaches
 ✅ **Multi-Objective Optimization** - Cost, Time, Carbon, Reliability, Service Level
 ✅ **Pareto Frontier Generation** - Find optimal trade-offs between objectives
 ✅ **Real-Time Re-optimization** - Dynamic rerouting on disruptions
-✅ **Beautiful Dashboard** - Production-ready UI with analytics
-✅ **Interactive Network Visualization** - Canvas-based graph editor
 ✅ **Constraint Solving** - Time windows, capacity, emissions, regulatory
-✅ **Cost Breakdown** - Detailed attribution (linehaul, fuel, tolls, customs)
-✅ **Scenario Analysis** - What-if planning and comparison
+
+### Real-Time Features
+✅ **WebSocket Integration** - Live updates via Socket.IO
+✅ **Real-Time Notifications** - Toast alerts and notification center
+✅ **Live Network Status** - Connection monitoring and health checks
+✅ **Automated Alerts** - Traffic, incidents, deliveries, optimizations
+
+### Advanced UI Components
+✅ **Interactive Dashboard** - Real-time analytics with beautiful charts
+✅ **Drag-and-Drop Graph Editor** - Visual network editing with undo/redo
+✅ **Scenario Comparison Tool** - Side-by-side analysis with table/chart/radar views
+✅ **Network Visualization** - Canvas-based interactive map
+✅ **Route Planning Interface** - 4 optimization scenarios (cost, time, carbon, reliability)
+✅ **Cost Breakdown Analysis** - Detailed attribution (linehaul, fuel, tolls, customs)
+
+### Export & Reporting
+✅ **PDF Export** - Professional route reports with tables and summaries
+✅ **Excel Export** - Multi-sheet workbooks with comprehensive data
+✅ **JSON/CSV Export** - Raw data export for integration
+✅ **Network Data Export** - Nodes and edges in multiple formats
+
+### UI/UX Excellence
+✅ **Framer Motion Animations** - Smooth transitions and micro-interactions
+✅ **Responsive Design** - Works beautifully on all screen sizes
+✅ **Dark Mode Support** - Eye-friendly interface with theme switching
+✅ **Notification Center** - Centralized alerts with dismiss and clear all
+✅ **Beautiful Gradients** - Modern, production-ready aesthetic
 
 ## 📖 Documentation
 
