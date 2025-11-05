@@ -10,6 +10,12 @@ import {
   Plus,
   X,
   Play,
+  Save,
+  FolderOpen,
+  AlertCircle,
+  CheckCircle,
+  BarChart3,
+  FileDown,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ApiService } from '../services/api.service';
@@ -28,23 +34,47 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  LineChart,
+  Line,
 } from 'recharts';
+
+interface ScenarioData {
+  name: string;
+  origin: string;
+  destination: string;
+  type: string;
+  route: Route | null;
+  loading: boolean;
+}
+
+interface Notification {
+  type: 'success' | 'error' | 'info';
+  message: string;
+}
 
 export const ScenarioComparison: React.FC = () => {
   const [nodes, setNodes] = useState<NetworkNode[]>([]);
-  const [scenarios, setScenarios] = useState<{
-    name: string;
-    origin: string;
-    destination: string;
-    type: string;
-    route: Route | null;
-    loading: boolean;
-  }[]>([]);
-  const [compareView, setCompareView] = useState<'table' | 'chart' | 'radar'>('table');
+  const [scenarios, setScenarios] = useState<ScenarioData[]>([]);
+  const [compareView, setCompareView] = useState<'table' | 'chart' | 'radar' | 'breakdown' | 'performance'>('table');
+  const [baselineIndex, setBaselineIndex] = useState<number>(0);
+  const [notification, setNotification] = useState<Notification | null>(null);
 
   useEffect(() => {
     loadNetwork();
+    loadSavedScenarios();
   }, []);
+
+  // Auto-dismiss notifications after 3 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (type: 'success' | 'error' | 'info', message: string) => {
+    setNotification({ type, message });
+  };
 
   const loadNetwork = async () => {
     try {
@@ -52,7 +82,52 @@ export const ScenarioComparison: React.FC = () => {
       setNodes(data.nodes);
     } catch (error) {
       console.error('Failed to load network:', error);
+      showNotification('error', 'Failed to load network data');
     }
+  };
+
+  const saveScenarios = () => {
+    try {
+      const dataToSave = scenarios.map(s => ({
+        name: s.name,
+        origin: s.origin,
+        destination: s.destination,
+        type: s.type,
+      }));
+      localStorage.setItem('savedScenarios', JSON.stringify(dataToSave));
+      localStorage.setItem('baselineIndex', baselineIndex.toString());
+      showNotification('success', 'Scenarios saved successfully');
+    } catch (error) {
+      showNotification('error', 'Failed to save scenarios');
+    }
+  };
+
+  const loadSavedScenarios = () => {
+    try {
+      const saved = localStorage.getItem('savedScenarios');
+      const savedBaseline = localStorage.getItem('baselineIndex');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setScenarios(parsed.map((s: any) => ({
+          ...s,
+          route: null,
+          loading: false,
+        })));
+      }
+      if (savedBaseline) {
+        setBaselineIndex(parseInt(savedBaseline, 10));
+      }
+    } catch (error) {
+      console.error('Failed to load saved scenarios:', error);
+    }
+  };
+
+  const clearSavedScenarios = () => {
+    localStorage.removeItem('savedScenarios');
+    localStorage.removeItem('baselineIndex');
+    setScenarios([]);
+    setBaselineIndex(0);
+    showNotification('info', 'Scenarios cleared');
   };
 
   const addScenario = () => {
@@ -82,7 +157,7 @@ export const ScenarioComparison: React.FC = () => {
   const runScenario = async (index: number) => {
     const scenario = scenarios[index];
     if (!scenario.origin || !scenario.destination) {
-      alert('Please select origin and destination');
+      showNotification('error', 'Please select origin and destination');
       return;
     }
 
@@ -95,8 +170,10 @@ export const ScenarioComparison: React.FC = () => {
         scenario.type as any
       );
       updateScenario(index, { route, loading: false });
+      showNotification('success', `${scenario.name} completed successfully`);
     } catch (error) {
       console.error('Failed to optimize scenario:', error);
+      showNotification('error', `Failed to optimize ${scenario.name}`);
       updateScenario(index, { loading: false });
     }
   };
@@ -160,18 +237,33 @@ export const ScenarioComparison: React.FC = () => {
     return delta;
   };
 
-  const exportComparison = () => {
-    const data = scenarios.filter((s) => s.route).map((s) => ({
+  const exportToJSON = () => {
+    const baseline = scenarios[baselineIndex]?.route;
+    const data = scenarios.filter((s) => s.route).map((s, i) => ({
       name: s.name,
       origin: s.origin,
       destination: s.destination,
-      type: s.type,
-      totalCost: s.route!.totalCost.total,
-      totalTime: s.route!.totalTime,
-      totalCarbon: s.route!.totalCarbon,
-      totalDistance: s.route!.totalDistance,
-      reliability: s.route!.reliability,
-      serviceLevel: s.route!.serviceLevel,
+      optimizationType: s.type,
+      isBaseline: i === baselineIndex,
+      metrics: {
+        totalCost: s.route!.totalCost.total,
+        totalTime: s.route!.totalTime,
+        totalCarbon: s.route!.totalCarbon,
+        totalDistance: s.route!.totalDistance,
+        reliability: s.route!.reliability,
+        serviceLevel: s.route!.serviceLevel,
+        riskScore: s.route!.riskScore,
+      },
+      costBreakdown: s.route!.totalCost,
+      confidence: s.route!.confidence,
+      metadata: s.route!.metadata,
+      deltaVsBaseline: baseline ? {
+        cost: ((s.route!.totalCost.total - baseline.totalCost.total) / baseline.totalCost.total) * 100,
+        time: ((s.route!.totalTime - baseline.totalTime) / baseline.totalTime) * 100,
+        carbon: ((s.route!.totalCarbon - baseline.totalCarbon) / baseline.totalCarbon) * 100,
+        distance: ((s.route!.totalDistance - baseline.totalDistance) / baseline.totalDistance) * 100,
+        reliability: ((s.route!.reliability - baseline.reliability) / baseline.reliability) * 100,
+      } : null,
     }));
 
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -180,10 +272,97 @@ export const ScenarioComparison: React.FC = () => {
     a.href = url;
     a.download = `scenario-comparison-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
+    showNotification('success', 'Exported to JSON');
+  };
+
+  const exportToCSV = () => {
+    const baseline = scenarios[baselineIndex]?.route;
+    const headers = [
+      'Scenario',
+      'Origin',
+      'Destination',
+      'Type',
+      'Total Cost ($)',
+      'Cost Delta (%)',
+      'Time (min)',
+      'Time Delta (%)',
+      'Carbon (kg)',
+      'Carbon Delta (%)',
+      'Distance (km)',
+      'Distance Delta (%)',
+      'Reliability (%)',
+      'Reliability Delta (%)',
+      'Service Level (%)',
+      'Risk Score',
+      'Algorithm',
+      'Compute Time (ms)',
+    ];
+
+    const rows = scenarios.filter((s) => s.route).map((s, i) => {
+      const isBaseline = i === baselineIndex;
+      return [
+        s.name,
+        s.origin,
+        s.destination,
+        s.type,
+        s.route!.totalCost.total.toFixed(2),
+        !isBaseline && baseline ? getDelta(s.route!.totalCost.total, baseline.totalCost.total).toFixed(2) : '0.00',
+        s.route!.totalTime.toFixed(2),
+        !isBaseline && baseline ? getDelta(s.route!.totalTime, baseline.totalTime).toFixed(2) : '0.00',
+        s.route!.totalCarbon.toFixed(2),
+        !isBaseline && baseline ? getDelta(s.route!.totalCarbon, baseline.totalCarbon).toFixed(2) : '0.00',
+        s.route!.totalDistance.toFixed(2),
+        !isBaseline && baseline ? getDelta(s.route!.totalDistance, baseline.totalDistance).toFixed(2) : '0.00',
+        (s.route!.reliability * 100).toFixed(2),
+        !isBaseline && baseline ? getDelta(s.route!.reliability, baseline.reliability).toFixed(2) : '0.00',
+        s.route!.serviceLevel.toFixed(2),
+        s.route!.riskScore.toFixed(2),
+        s.route!.metadata?.algorithm || 'N/A',
+        s.route!.metadata?.computeTime?.toFixed(2) || 'N/A',
+      ];
+    });
+
+    const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `scenario-comparison-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    showNotification('success', 'Exported to CSV');
   };
 
   return (
     <div className="space-y-6">
+      {/* Notification Toast */}
+      <AnimatePresence>
+        {notification && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-4 right-4 z-50 max-w-md"
+          >
+            <div
+              className={`flex items-center space-x-3 px-4 py-3 rounded-lg shadow-lg ${
+                notification.type === 'success'
+                  ? 'bg-green-500 text-white'
+                  : notification.type === 'error'
+                  ? 'bg-red-500 text-white'
+                  : 'bg-blue-500 text-white'
+              }`}
+            >
+              {notification.type === 'success' ? (
+                <CheckCircle className="w-5 h-5" />
+              ) : (
+                <AlertCircle className="w-5 h-5" />
+              )}
+              <span className="font-medium">{notification.message}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -198,6 +377,16 @@ export const ScenarioComparison: React.FC = () => {
 
         <div className="flex items-center space-x-3">
           <button
+            onClick={saveScenarios}
+            disabled={scenarios.length === 0}
+            className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors flex items-center space-x-2 disabled:opacity-50"
+            title="Save scenario configurations"
+          >
+            <Save className="w-4 h-4" />
+            <span>Save</span>
+          </button>
+
+          <button
             onClick={addScenario}
             className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors flex items-center space-x-2"
           >
@@ -206,13 +395,28 @@ export const ScenarioComparison: React.FC = () => {
           </button>
 
           {scenarios.some((s) => s.route) && (
-            <button
-              onClick={exportComparison}
-              className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 transition-colors flex items-center space-x-2"
-            >
-              <Download className="w-4 h-4" />
-              <span>Export</span>
-            </button>
+            <div className="relative group">
+              <button className="px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 transition-colors flex items-center space-x-2">
+                <Download className="w-4 h-4" />
+                <span>Export</span>
+              </button>
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                <button
+                  onClick={exportToJSON}
+                  className="w-full px-4 py-2 text-left text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-t-lg flex items-center space-x-2"
+                >
+                  <FileDown className="w-4 h-4" />
+                  <span>Export as JSON</span>
+                </button>
+                <button
+                  onClick={exportToCSV}
+                  className="w-full px-4 py-2 text-left text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-b-lg flex items-center space-x-2"
+                >
+                  <FileDown className="w-4 h-4" />
+                  <span>Export as CSV</span>
+                </button>
+              </div>
+            </div>
           )}
 
           <button
@@ -345,9 +549,25 @@ export const ScenarioComparison: React.FC = () => {
       {scenarios.some((s) => s.route) && (
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 border border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-              Comparison Results
-            </h3>
+            <div className="flex items-center space-x-4">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                Comparison Results
+              </h3>
+
+              {/* Baseline Selection */}
+              <div className="flex items-center space-x-2">
+                <label className="text-sm text-slate-600 dark:text-slate-400">Baseline:</label>
+                <select
+                  value={baselineIndex}
+                  onChange={(e) => setBaselineIndex(parseInt(e.target.value, 10))}
+                  className="px-3 py-1.5 text-sm bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white"
+                >
+                  {scenarios.filter(s => s.route).map((s, i) => (
+                    <option key={i} value={i}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
             <div className="flex items-center space-x-2 bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
               <button
@@ -380,6 +600,26 @@ export const ScenarioComparison: React.FC = () => {
               >
                 Radar
               </button>
+              <button
+                onClick={() => setCompareView('breakdown')}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  compareView === 'breakdown'
+                    ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                Breakdown
+              </button>
+              <button
+                onClick={() => setCompareView('performance')}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  compareView === 'performance'
+                    ? 'bg-white dark:bg-slate-600 text-slate-900 dark:text-white shadow-sm'
+                    : 'text-slate-600 dark:text-slate-400'
+                }`}
+              >
+                Performance
+              </button>
             </div>
           </div>
 
@@ -410,8 +650,33 @@ export const ScenarioComparison: React.FC = () => {
                 </thead>
                 <tbody>
                   {scenarios.filter((s) => s.route).map((scenario, index) => {
-                    const isBaseline = index === 0;
-                    const baseline = scenarios[0].route;
+                    const isBaseline = index === baselineIndex;
+                    const baseline = scenarios[baselineIndex]?.route;
+
+                    const renderMetricWithDelta = (value: string, currentVal: number, baselineVal: number | undefined, isLowerBetter: boolean = true) => (
+                      <div>
+                        <span className="font-semibold text-slate-900 dark:text-white">{value}</span>
+                        {!isBaseline && baseline && baselineVal !== undefined && (
+                          <div className="flex items-center mt-1">
+                            {getDelta(currentVal, baselineVal) < 0 ? (
+                              <>
+                                <TrendingDown className={`w-3 h-3 mr-1 ${isLowerBetter ? 'text-green-500' : 'text-red-500'}`} />
+                                <span className={`text-xs ${isLowerBetter ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                  {Math.abs(getDelta(currentVal, baselineVal)).toFixed(1)}%
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <TrendingUp className={`w-3 h-3 mr-1 ${isLowerBetter ? 'text-red-500' : 'text-green-500'}`} />
+                                <span className={`text-xs ${isLowerBetter ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                                  +{getDelta(currentVal, baselineVal).toFixed(1)}%
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
 
                     return (
                       <tr
@@ -429,50 +694,44 @@ export const ScenarioComparison: React.FC = () => {
                           )}
                         </td>
                         <td className="py-4 px-4">
-                          <div>
-                            <span className="font-semibold text-slate-900 dark:text-white">
-                              ${scenario.route!.totalCost.total.toFixed(0)}
-                            </span>
-                            {!isBaseline && baseline && (
-                              <div className="flex items-center mt-1">
-                                {getDelta(scenario.route!.totalCost.total, baseline.totalCost.total) < 0 ? (
-                                  <>
-                                    <TrendingDown className="w-3 h-3 text-green-500 mr-1" />
-                                    <span className="text-xs text-green-600 dark:text-green-400">
-                                      {Math.abs(getDelta(scenario.route!.totalCost.total, baseline.totalCost.total)).toFixed(1)}%
-                                    </span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <TrendingUp className="w-3 h-3 text-red-500 mr-1" />
-                                    <span className="text-xs text-red-600 dark:text-red-400">
-                                      +{getDelta(scenario.route!.totalCost.total, baseline.totalCost.total).toFixed(1)}%
-                                    </span>
-                                  </>
-                                )}
-                              </div>
-                            )}
-                          </div>
+                          {renderMetricWithDelta(
+                            `$${scenario.route!.totalCost.total.toFixed(0)}`,
+                            scenario.route!.totalCost.total,
+                            baseline?.totalCost.total,
+                            true
+                          )}
                         </td>
                         <td className="py-4 px-4">
-                          <span className="font-semibold text-slate-900 dark:text-white">
-                            {(scenario.route!.totalTime / 60).toFixed(1)}h
-                          </span>
+                          {renderMetricWithDelta(
+                            `${(scenario.route!.totalTime / 60).toFixed(1)}h`,
+                            scenario.route!.totalTime,
+                            baseline?.totalTime,
+                            true
+                          )}
                         </td>
                         <td className="py-4 px-4">
-                          <span className="font-semibold text-slate-900 dark:text-white">
-                            {scenario.route!.totalCarbon.toFixed(1)}kg
-                          </span>
+                          {renderMetricWithDelta(
+                            `${scenario.route!.totalCarbon.toFixed(1)}kg`,
+                            scenario.route!.totalCarbon,
+                            baseline?.totalCarbon,
+                            true
+                          )}
                         </td>
                         <td className="py-4 px-4">
-                          <span className="font-semibold text-slate-900 dark:text-white">
-                            {scenario.route!.totalDistance.toFixed(0)}km
-                          </span>
+                          {renderMetricWithDelta(
+                            `${scenario.route!.totalDistance.toFixed(0)}km`,
+                            scenario.route!.totalDistance,
+                            baseline?.totalDistance,
+                            true
+                          )}
                         </td>
                         <td className="py-4 px-4">
-                          <span className="font-semibold text-slate-900 dark:text-white">
-                            {(scenario.route!.reliability * 100).toFixed(1)}%
-                          </span>
+                          {renderMetricWithDelta(
+                            `${(scenario.route!.reliability * 100).toFixed(1)}%`,
+                            scenario.route!.reliability,
+                            baseline?.reliability,
+                            false // Higher reliability is better
+                          )}
                         </td>
                       </tr>
                     );
@@ -524,6 +783,196 @@ export const ScenarioComparison: React.FC = () => {
                 <Tooltip />
               </RadarChart>
             </ResponsiveContainer>
+          )}
+
+          {compareView === 'breakdown' && (
+            <div className="space-y-6">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-slate-700">
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">
+                        Scenario
+                      </th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">
+                        Linehaul
+                      </th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">
+                        Fuel Surcharge
+                      </th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">
+                        Accessorials
+                      </th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">
+                        Tolls
+                      </th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">
+                        Insurance
+                      </th>
+                      <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">
+                        Total
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {scenarios.filter((s) => s.route).map((scenario, index) => {
+                      const isBaseline = index === baselineIndex;
+                      return (
+                        <tr
+                          key={index}
+                          className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                        >
+                          <td className="py-4 px-4">
+                            <span className="font-semibold text-slate-900 dark:text-white">
+                              {scenario.name}
+                            </span>
+                            {isBaseline && (
+                              <span className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs rounded-full">
+                                Baseline
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-4 px-4 text-slate-900 dark:text-white">
+                            ${scenario.route!.totalCost.linehaul.toFixed(2)}
+                          </td>
+                          <td className="py-4 px-4 text-slate-900 dark:text-white">
+                            ${scenario.route!.totalCost.fuelSurcharge.toFixed(2)}
+                          </td>
+                          <td className="py-4 px-4 text-slate-900 dark:text-white">
+                            ${scenario.route!.totalCost.accessorials.toFixed(2)}
+                          </td>
+                          <td className="py-4 px-4 text-slate-900 dark:text-white">
+                            ${scenario.route!.totalCost.tolls.toFixed(2)}
+                          </td>
+                          <td className="py-4 px-4 text-slate-900 dark:text-white">
+                            ${scenario.route!.totalCost.insurance.toFixed(2)}
+                          </td>
+                          <td className="py-4 px-4 font-bold text-slate-900 dark:text-white">
+                            ${scenario.route!.totalCost.total.toFixed(2)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Cost Breakdown Bar Chart */}
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart
+                  data={scenarios.filter((s) => s.route).map((s) => ({
+                    name: s.name,
+                    Linehaul: s.route!.totalCost.linehaul,
+                    Fuel: s.route!.totalCost.fuelSurcharge,
+                    Accessorials: s.route!.totalCost.accessorials,
+                    Tolls: s.route!.totalCost.tolls,
+                    Insurance: s.route!.totalCost.insurance,
+                  }))}
+                >
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: 'white',
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="Linehaul" stackId="a" fill="#3b82f6" />
+                  <Bar dataKey="Fuel" stackId="a" fill="#10b981" />
+                  <Bar dataKey="Accessorials" stackId="a" fill="#f59e0b" />
+                  <Bar dataKey="Tolls" stackId="a" fill="#8b5cf6" />
+                  <Bar dataKey="Insurance" stackId="a" fill="#ec4899" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {compareView === 'performance' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {scenarios.filter((s) => s.route).map((scenario, index) => {
+                  const isBaseline = index === baselineIndex;
+                  return (
+                    <div
+                      key={index}
+                      className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 border border-slate-200 dark:border-slate-600"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-slate-900 dark:text-white">
+                          {scenario.name}
+                        </h4>
+                        {isBaseline && (
+                          <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs rounded-full">
+                            Baseline
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-slate-600 dark:text-slate-400">Algorithm:</span>
+                          <span className="font-medium text-slate-900 dark:text-white">
+                            {scenario.route!.metadata?.algorithm || 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-600 dark:text-slate-400">Compute Time:</span>
+                          <span className="font-medium text-slate-900 dark:text-white">
+                            {scenario.route!.metadata?.computeTime?.toFixed(2) || 'N/A'} ms
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-600 dark:text-slate-400">Alternatives:</span>
+                          <span className="font-medium text-slate-900 dark:text-white">
+                            {scenario.route!.metadata?.alternativesConsidered || 'N/A'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-600 dark:text-slate-400">Service Level:</span>
+                          <span className="font-medium text-slate-900 dark:text-white">
+                            {scenario.route!.serviceLevel.toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-slate-600 dark:text-slate-400">Risk Score:</span>
+                          <span className="font-medium text-slate-900 dark:text-white">
+                            {scenario.route!.riskScore.toFixed(1)}
+                          </span>
+                        </div>
+
+                        {scenario.route!.confidence && (
+                          <>
+                            <div className="pt-2 mt-2 border-t border-slate-300 dark:border-slate-600">
+                              <span className="text-slate-600 dark:text-slate-400 font-semibold">
+                                Confidence Intervals:
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-600 dark:text-slate-400">Time Range:</span>
+                              <span className="font-medium text-slate-900 dark:text-white">
+                                {(scenario.route!.confidence.timeMin / 60).toFixed(1)}h -{' '}
+                                {(scenario.route!.confidence.timeMax / 60).toFixed(1)}h
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-600 dark:text-slate-400">Cost Range:</span>
+                              <span className="font-medium text-slate-900 dark:text-white">
+                                ${scenario.route!.confidence.costMin.toFixed(0)} - $
+                                {scenario.route!.confidence.costMax.toFixed(0)}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           )}
         </div>
       )}
