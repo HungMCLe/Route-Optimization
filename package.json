@@ -1,0 +1,27 @@
+{
+  "name": "route-optimization",
+  "version": "1.0.0",
+  "description": "Full-stack route optimization platform for multi-modal logistics",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "cd client && npm run dev",
+    "build": "npm run build:server && npm run build:client",
+    "build:server": "cd server && npm run build",
+    "build:client": "cd client && npm run build",
+    "install:all": "npm install && cd server && npm install && cd ../client && npm install"
+  },
+  "keywords": [
+    "route-optimization",
+    "logistics",
+    "graph-algorithms",
+    "multi-objective-optimization",
+    "transportation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

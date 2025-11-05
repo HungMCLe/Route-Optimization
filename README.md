@@ -1,4 +1,93 @@
-# Route-Optimization-For-Logistics
+# Route Optimization Platform
+
+A production-ready, full-stack route optimization platform for multi-modal logistics networks. Built with React, TypeScript, Node.js, and advanced graph algorithms.
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Node.js 20+ and npm
+
+### Installation & Running
+
+```bash
+# Install all dependencies (root, server, and client)
+npm run install:all
+
+# Run both backend and frontend concurrently
+npm run dev
+```
+
+The application will be available at:
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:3001
+- **Health Check**: http://localhost:3001/health
+
+### Manual Setup
+
+If you prefer to run servers separately:
+
+```bash
+# Terminal 1: Start backend
+cd server
+npm install
+npm run dev
+
+# Terminal 2: Start frontend
+cd client
+npm install
+npm run dev
+```
+
+## 📋 Features
+
+### Core Routing & Optimization
+✅ **Multi-Modal Routing** - Road, Rail, Sea, Air, and Intermodal transport
+✅ **Advanced Algorithms** - A*, Dijkstra, Bidirectional Search, Hybrid approaches
+✅ **Multi-Objective Optimization** - Cost, Time, Carbon, Reliability, Service Level
+✅ **Pareto Frontier Generation** - Find optimal trade-offs between objectives
+✅ **Real-Time Re-optimization** - Dynamic rerouting on disruptions
+✅ **Constraint Solving** - Time windows, capacity, emissions, regulatory
+
+### Real-Time Features
+✅ **WebSocket Integration** - Live updates via Socket.IO
+✅ **Real-Time Notifications** - Toast alerts and notification center
+✅ **Live Network Status** - Connection monitoring and health checks
+✅ **Automated Alerts** - Traffic, incidents, deliveries, optimizations
+
+### Advanced UI Components
+✅ **Interactive Dashboard** - Real-time analytics with beautiful charts
+✅ **Drag-and-Drop Graph Editor** - Visual network editing with undo/redo
+✅ **Scenario Comparison Tool** - Side-by-side analysis with table/chart/radar views
+✅ **Network Visualization** - Canvas-based interactive map
+✅ **Route Planning Interface** - 4 optimization scenarios (cost, time, carbon, reliability)
+✅ **Cost Breakdown Analysis** - Detailed attribution (linehaul, fuel, tolls, customs)
+
+### Export & Reporting
+✅ **PDF Export** - Professional route reports with tables and summaries
+✅ **Excel Export** - Multi-sheet workbooks with comprehensive data
+✅ **JSON/CSV Export** - Raw data export for integration
+✅ **Network Data Export** - Nodes and edges in multiple formats
+
+### UI/UX Excellence
+✅ **Framer Motion Animations** - Smooth transitions and micro-interactions
+✅ **Responsive Design** - Works beautifully on all screen sizes
+✅ **Dark Mode Support** - Eye-friendly interface with theme switching
+✅ **Notification Center** - Centralized alerts with dismiss and clear all
+✅ **Beautiful Gradients** - Modern, production-ready aesthetic
+
+## 📖 Documentation
+
+See [PROJECT_OVERVIEW.md](./PROJECT_OVERVIEW.md) for comprehensive documentation including:
+- Architecture details
+- API documentation
+- Usage examples
+- Performance characteristics
+- Deployment guide
+
+---
+
+## Original System Architecture
+
 Route optimization project using Graph Neural Networks (GNN) for efficient planning. Optimizes routes across truck, rail, and ocean transport, minimizing cost, time, GHG emissions, and fuel usage.
 
 ```mermaid
