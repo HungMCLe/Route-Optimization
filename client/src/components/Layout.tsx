@@ -15,12 +15,13 @@ import { NotificationCenter } from './NotificationCenter';
 import { useWebSocket } from '../hooks/useWebSocket';
 
 interface LayoutProps {
+  activeView: string;
+  onViewChange: (view: string) => void;
   children: React.ReactNode;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children }) => {
+export const Layout: React.FC<LayoutProps> = ({ activeView, onViewChange, children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeView, setActiveView] = useState('dashboard');
   const { isConnected, alerts, dismissAlert, clearAlerts } = useWebSocket();
 
   const menuItems = [
@@ -82,7 +83,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveView(item.id)}
+                onClick={() => onViewChange(item.id)}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                   isActive
                     ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-lg shadow-primary-500/30'
